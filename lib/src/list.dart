@@ -101,7 +101,7 @@ class _ListMangaState extends State<ListManga> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(
                       8.0,
-                    ), // Samakan radiusnya
+                    ),
                     image: DecorationImage(
                       image: NetworkImage(
                         manga.imageUrl,
