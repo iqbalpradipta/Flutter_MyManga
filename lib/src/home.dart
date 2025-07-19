@@ -57,7 +57,7 @@ class MyHome extends StatelessWidget {
               "Furina",
               style: TextStyle(
                 fontSize: 20.0,
-                color: Colors.black,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -76,8 +76,8 @@ class MyHome extends StatelessWidget {
               child: Divider(color: Colors.grey),
             ),
             Center(
-              child: ElevatedButton(
-                onPressed: () {
+              child: InkWell(
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const ListManga()),

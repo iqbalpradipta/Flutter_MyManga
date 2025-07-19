@@ -70,57 +70,50 @@ class _ListMangaState extends State<ListManga> {
   // --- AKHIR DARI DUMMY DATA ---
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("List Manga")),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(8.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 10.0,
-          mainAxisSpacing: 10.0,
-          childAspectRatio: 2 / 3,
-        ),
-        itemCount: _dummyMangaList.length,
-        itemBuilder: (context, index) {
-          final manga = _dummyMangaList[index];
+    return GridView.builder(
+      padding: const EdgeInsets.all(8.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
+        childAspectRatio: 2 / 3,
+      ),
+      itemCount: _dummyMangaList.length,
+      itemBuilder: (context, index) {
+        final manga = _dummyMangaList[index];
 
-          return InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const DetailManga()),
-              );
-            },
-            borderRadius: BorderRadius.circular(8.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 100.0,
-                  height: 150.0,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      8.0,
-                    ),
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        manga.imageUrl,
-                      ),
-                      fit: BoxFit.cover,
-                    ),
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DetailManga()),
+            );
+          },
+          borderRadius: BorderRadius.circular(8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 100.0,
+                height: 150.0,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                  image: DecorationImage(
+                    image: NetworkImage(manga.imageUrl),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(height: 8.0),
-                Text(
-                  manga.title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+              const SizedBox(height: 8.0),
+              Text(
+                manga.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
