@@ -10,9 +10,9 @@ class BottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'home'),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'search'),
-        BottomNavigationBarItem(icon: Icon(Icons.list), label: 'ListManga'),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+        BottomNavigationBarItem(icon: Icon(Icons.list), label: 'List Manga'),
       ],
 
       currentIndex: currentIndex,

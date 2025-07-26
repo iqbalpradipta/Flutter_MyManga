@@ -1,5 +1,3 @@
-// Anda bisa letakkan ini di file yang sama atau di file model terpisah
-
 class MangaDetail {
   final int id;
   final String title;
@@ -20,7 +18,7 @@ class MangaDetail {
   MangaDetail({
     required this.id,
     required this.title,
-    this.japaneseTitle = '', // Default value jika data tidak ada
+    this.japaneseTitle = '',
     this.score = '',
     this.producer = '',
     this.type = '',
@@ -36,13 +34,15 @@ class MangaDetail {
   });
 
   factory MangaDetail.fromJson(Map<String, dynamic> json) {
-    var chaptersList = json['chapters'] as List? ?? []; // Handle jika 'chapters' null
-    List<ChapterSummary> chapters = chaptersList.map((c) => ChapterSummary.fromJson(c)).toList();
-    
+    var chaptersList = json['chapters'] as List? ?? [];
+    List<ChapterSummary> chapters = chaptersList
+        .map((c) => ChapterSummary.fromJson(c))
+        .toList();
+
     return MangaDetail(
       id: json['id'] ?? 0,
-      title: json['title'] ?? '', // Gunakan '??' untuk memberi nilai default
-      japaneseTitle: json['japanese_title'] ?? '', // Sesuaikan nama key dengan API Anda
+      title: json['title'] ?? '',
+      japaneseTitle: json['japanese_title'] ?? '',
       score: json['rating'] ?? '',
       producer: json['producer'] ?? '',
       type: json['type'] ?? '',
@@ -68,9 +68,6 @@ class ChapterSummary {
   factory ChapterSummary.fromJson(Map<String, dynamic> json) {
     var pagesList = json['images'] as List? ?? [];
     List<String> pages = pagesList.cast<String>();
-    return ChapterSummary(
-      title: json['chapter_title'] ?? '',
-      pages: pages,
-    );
+    return ChapterSummary(title: json['chapter_title'] ?? '', pages: pages);
   }
 }
