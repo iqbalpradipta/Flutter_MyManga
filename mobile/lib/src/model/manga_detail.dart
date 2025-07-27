@@ -1,60 +1,46 @@
 class MangaDetail {
   final int id;
   final String title;
-  final String japaneseTitle;
-  final String score;
-  final String producer;
   final String type;
-  final String status;
-  final String totalEpisode;
-  final String duration;
-  final String releaseDate;
-  final String studio;
-  final String genre;
-  final String synopsis;
   final String imageUrl;
+  final String rating;
   final List<ChapterSummary> chapters;
+  final String author;
+  final String status;
+  final String released;
+  final List<String> genres;
 
   MangaDetail({
     required this.id,
     required this.title,
-    this.japaneseTitle = '',
-    this.score = '',
-    this.producer = '',
-    this.type = '',
-    this.status = '',
-    this.totalEpisode = '',
-    this.duration = '',
-    this.releaseDate = '',
-    this.studio = '',
-    this.genre = '',
-    this.synopsis = '',
+    required this.type,
     required this.imageUrl,
+    required this.rating,
     required this.chapters,
+    required this.author,
+    required this.status,
+    required this.released,
+    required this.genres,
   });
 
   factory MangaDetail.fromJson(Map<String, dynamic> json) {
     var chaptersList = json['chapters'] as List? ?? [];
-    List<ChapterSummary> chapters = chaptersList
-        .map((c) => ChapterSummary.fromJson(c))
-        .toList();
+    List<ChapterSummary> chapters = chaptersList.map((c) => ChapterSummary.fromJson(c)).toList();
+    
+    var genresList = json['genres'] as List? ?? [];
+    List<String> genres = genresList.cast<String>();
 
     return MangaDetail(
       id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      japaneseTitle: json['japanese_title'] ?? '',
-      score: json['rating'] ?? '',
-      producer: json['producer'] ?? '',
-      type: json['type'] ?? '',
-      status: json['status'] ?? '',
-      totalEpisode: json['total_episode']?.toString() ?? '',
-      duration: json['duration'] ?? '',
-      releaseDate: json['release_date'] ?? '',
-      studio: json['studio'] ?? '',
-      genre: json['genre'] ?? '',
-      synopsis: json['synopsis'] ?? 'Tidak ada sinopsis.',
+      title: json['title'] ?? 'No Title',
+      type: json['type'] ?? 'N/A',
       imageUrl: json['comic_image'] ?? '',
+      rating: json['rating'] ?? 'N/A',
       chapters: chapters,
+      author: json['author'] ?? 'N/A',
+      status: json['status'] ?? 'N/A',
+      released: json['released'] ?? 'N/A',
+      genres: genres,
     );
   }
 }
@@ -67,7 +53,9 @@ class ChapterSummary {
 
   factory ChapterSummary.fromJson(Map<String, dynamic> json) {
     var pagesList = json['images'] as List? ?? [];
-    List<String> pages = pagesList.cast<String>();
-    return ChapterSummary(title: json['chapter_title'] ?? '', pages: pages);
+    return ChapterSummary(
+      title: json['chapter_title'] ?? 'No Title',
+      pages: pagesList.cast<String>(),
+    );
   }
 }

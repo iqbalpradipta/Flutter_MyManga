@@ -44,22 +44,12 @@ class _DetailMangaState extends State<DetailManga> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
+            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
           } else if (snapshot.hasData) {
             final manga = snapshot.data!;
             return MangaDetailBody(manga: manga);
           }
-          return const Center(
-            child: Text(
-              "Tidak ada data.",
-              style: TextStyle(color: Colors.white),
-            ),
-          );
+          return const Center(child: Text("Tidak ada data.", style: TextStyle(color: Colors.white)));
         },
       ),
     );
@@ -73,15 +63,14 @@ class MangaDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Stack(
         children: [
           Positioned.fill(
             child: Image.network(
               manga.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Container(color: Colors.grey.shade800),
+              errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey.shade800),
             ),
           ),
           Positioned.fill(
@@ -90,7 +79,6 @@ class MangaDetailBody extends StatelessWidget {
               child: Container(color: const Color(0xFF1F1D2B)),
             ),
           ),
-
           NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
@@ -102,41 +90,27 @@ class MangaDetailBody extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   actions: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.favorite_border,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.share, color: Colors.white),
-                      onPressed: () {},
-                    ),
+                    IconButton(icon: const Icon(Icons.favorite_border, color: Colors.white), onPressed: () {}),
+                    IconButton(icon: const Icon(Icons.share, color: Colors.white), onPressed: () {}),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Padding(
-                      padding: EdgeInsets.only(
-                        top:
-                            kToolbarHeight + MediaQuery.of(context).padding.top,
-                      ),
+                      padding: EdgeInsets.only(top: kToolbarHeight + MediaQuery.of(context).padding.top),
                       child: MangaInfoHeader(manga: manga),
                     ),
                   ),
-                  expandedHeight: 320,
-                  pinned: false,
+                  expandedHeight: 300,
                 ),
                 SliverPersistentHeader(
                   delegate: _SliverAppBarDelegate(
-                    const TabBar(
+                    TabBar(
                       indicatorColor: Colors.deepPurpleAccent,
                       indicatorWeight: 3,
                       labelColor: Colors.white,
                       unselectedLabelColor: Colors.grey,
                       tabs: [
-                        Tab(text: 'Chapters'),
-                        Tab(text: 'Details'),
-                        Tab(text: 'Similar'),
+                        Tab(text: 'Chapters (${manga.chapters.length})'),
+                        const Tab(text: 'Details'),
                       ],
                     ),
                   ),
@@ -146,22 +120,8 @@ class MangaDetailBody extends StatelessWidget {
             },
             body: TabBarView(
               children: [
-                ChapterList(
-                  chapters: manga.chapters,
-                  allChapters: manga.chapters,
-                ),
-                const Center(
-                  child: Text(
-                    'Detail Info Here',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                const Center(
-                  child: Text(
-                    'Similar Manga Here',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+                ChapterList(chapters: manga.chapters, allChapters: manga.chapters),
+                DetailsTab(manga: manga),
               ],
             ),
           ),
@@ -184,61 +144,24 @@ class MangaInfoHeader extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12.0),
-            child: Image.network(
-              manga.imageUrl,
-              width: 120,
-              height: 180,
-              fit: BoxFit.cover,
-            ),
+            child: Image.network(manga.imageUrl, width: 120, height: 180, fit: BoxFit.cover),
           ),
           const SizedBox(width: 20.0),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  manga.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                Text(manga.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 8),
-                Text(
-                  'By Horikoshi Kōhei',
-                  style: TextStyle(color: Colors.grey.shade300),
-                ),
+                Text('By ${manga.author}', style: TextStyle(color: Colors.grey.shade300)),
                 const SizedBox(height: 8),
-                Text(
-                  'Ongoing',
-                  style: TextStyle(
-                    color: Colors.yellow.shade700,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(manga.status, style: TextStyle(color: Colors.yellow.shade700, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.yellow, size: 20),
                     const SizedBox(width: 4),
-                    Text(
-                      '8.3',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.favorite, color: Colors.pink, size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      '65k',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(manga.rating, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -246,18 +169,10 @@ class MangaInfoHeader extends StatelessWidget {
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurpleAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 12,
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                   ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -271,11 +186,7 @@ class MangaInfoHeader extends StatelessWidget {
 class ChapterList extends StatelessWidget {
   final List<ChapterSummary> chapters;
   final List<ChapterSummary> allChapters;
-  const ChapterList({
-    super.key,
-    required this.chapters,
-    required this.allChapters,
-  });
+  const ChapterList({super.key, required this.chapters, required this.allChapters});
 
   @override
   Widget build(BuildContext context) {
@@ -285,41 +196,28 @@ class ChapterList extends StatelessWidget {
       itemBuilder: (context, index) {
         final chapter = chapters[index];
         final cleanChapterTitle = chapter.title.replaceAll('\n', '').trim();
-        final chapterNumber = cleanChapterTitle.replaceAll(
-          RegExp(r'[^0-9]'),
-          '',
-        );
-
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  cleanChapterTitle,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
+                child: Text(cleanChapterTitle, style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ChapterPage(
-                        allChapters: allChapters,
-                        initialIndex: index,
-                      ),
+                      builder: (context) => ChapterPage(allChapters: allChapters, initialIndex: index),
                     ),
                   );
                 },
                 icon: const Icon(Icons.play_arrow, size: 16),
-                label: Text('Baca Chapter $chapterNumber'),
+                label: Text('Baca ${cleanChapterTitle.split(" ").last}'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  backgroundColor: const Color(0xFF252836),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
               ),
             ],
@@ -330,9 +228,65 @@ class ChapterList extends StatelessWidget {
   }
 }
 
+class DetailsTab extends StatelessWidget {
+  final MangaDetail manga;
+  const DetailsTab({super.key, required this.manga});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Genres', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: manga.genres.map((genre) => Chip(
+              label: Text(genre),
+              backgroundColor: const Color(0xFF252836),
+              labelStyle: const TextStyle(color: Colors.white),
+            )).toList(),
+          ),
+          const SizedBox(height: 24),
+          const Text('Information', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          InfoRow(label: 'Type', value: manga.type),
+          InfoRow(label: 'Status', value: manga.status),
+          InfoRow(label: 'Released', value: manga.released),
+          InfoRow(label: 'Author', value: manga.author),
+        ],
+      ),
+    );
+  }
+}
+
+class InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const InfoRow({super.key, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label, style: TextStyle(color: Colors.grey.shade400)),
+          ),
+          Expanded(child: Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+  }
+}
+
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   _SliverAppBarDelegate(this._tabBar);
-
   final TabBar _tabBar;
 
   @override
@@ -341,16 +295,10 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: Colors.transparent, child: _tabBar);
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: const Color(0xFF1F1D2B), child: _tabBar);
   }
 
   @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
-  }
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }
