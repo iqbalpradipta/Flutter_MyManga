@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"cloud.google.com/go/firestore"
+	"cloud.google.com/go/firestore/apiv1/firestorepb"
 	"github.com/iqbalpradipta/Flutter_MyManga/tree/main/server/src/models"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -69,22 +70,36 @@ func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
 	var comics []models.Comic
 	comicsCollection := c.db.Collection("comics")
 
+	// --- PERBAIKAN FINAL UNTUK MENGHITUNG TOTAL ITEM ---
 
 	aggQuery := comicsCollection.NewAggregationQuery().WithCount("all")
-
 	results, err := aggQuery.Get(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	totalItems, ok := results["all"].(int64)
+	countValue, ok := results["all"]
 	if !ok {
-		return nil, 0, errors.New("gagal mendapatkan total item dari hasil agregasi")
+		return []models.Comic{}, 0, nil // Koleksi kosong, kembalikan nilai nol
 	}
 
+	// 1. Assert tipe data ke *firestorepb.Value
+	valueProto, ok := countValue.(*firestorepb.Value)
+	if !ok {
+		return nil, 0, errors.New("gagal mengonversi hasil agregasi ke tipe proto")
+	}
 
+	// 2. Ambil nilai integer dari dalam objek proto tersebut
+	totalItems := valueProto.GetIntegerValue()
+
+	// --- AKHIR PERBAIKAN ---
+
+	// Jika tidak ada item, tidak perlu query lagi
+	if totalItems == 0 {
+		return []models.Comic{}, 0, nil
+	}
+	
 	offset := (page - 1) * limit
-
 	iter := comicsCollection.
 		OrderBy("id", firestore.Asc).
 		Limit(limit).
