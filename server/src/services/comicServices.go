@@ -14,7 +14,7 @@ import (
 
 type ComicStruct interface {
 	CreateData(data *models.Comic) error
-	GetData(page, limit int) ([]models.Comic, int, error)
+	GetData(page, limit int, searchQuery string) ([]models.Comic, int, error)
 	GetDataById(id string) (models.Comic, error)
 	UpdateData(id string, data *models.Comic) error
 	DeleteData(id string) error
@@ -65,10 +65,15 @@ func (c *comicService) CreateData(data *models.Comic) error {
 	return err
 }
 
-func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
+func (c *comicService) GetData(page, limit int, searchQuery string) ([]models.Comic, int, error) {
 	ctx := context.Background()
 	var comics []models.Comic
 	comicsCollection := c.db.Collection("comics")
+
+	query := comicsCollection.Query
+	if searchQuery != "" {
+		query = query.Where("title", ">=", searchQuery).Where("title", "<=", searchQuery+"\uf8ff")
+	}
 
 	aggQuery := comicsCollection.NewAggregationQuery().WithCount("all")
 	results, err := aggQuery.Get(ctx)
@@ -94,8 +99,8 @@ func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
 	}
 	
 	offset := (page - 1) * limit
-	iter := comicsCollection.
-		OrderBy("id", firestore.Asc).
+	iter := query.
+		OrderBy("title", firestore.Asc).
 		Limit(limit).
 		Offset(offset).
 		Documents(ctx)
