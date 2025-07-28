@@ -3,6 +3,7 @@ package configs
 import (
 	"context"
 	"log"
+	"os"
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
@@ -12,7 +13,13 @@ import (
 func InitDB() *firestore.Client  {
 	ctx := context.Background()
 
-	sa := option.WithCredentialsFile("./mangabal-d5010-firebase-adminsdk-fbsvc-4e2e6da1d4.json")
+
+	credentialsJSON := os.Getenv("FIREBASE_CREDENTIALS_JSON")
+	if credentialsJSON == "" {
+		log.Fatal("FIREBASE_CREDENTIALS_JSON environment variable not set")
+	}
+
+	sa := option.WithCredentialsJSON([]byte(credentialsJSON))
 	app, err := firebase.NewApp(ctx, nil, sa)
 
 	if err != nil {
