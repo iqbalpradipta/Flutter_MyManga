@@ -26,4 +26,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}))
 
 	routes.Routes(e, db)
+	
+	e.ServeHTTP(w, r)
 }
