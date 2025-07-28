@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/iqbalpradipta/Flutter_MyManga/tree/main/server/src/models"
 	"github.com/iqbalpradipta/Flutter_MyManga/tree/main/server/src/services"
@@ -72,18 +74,38 @@ func(cs *ComicControllers) CreateData(c echo.Context) error  {
 	})
 }
 
-func(cs *ComicControllers) GetData(c echo.Context) error {
-	data, err := cs.ComicStruct.GetData(); if err != nil {
+func (cs *ComicControllers) GetData(c echo.Context) error {
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 20 
+	}
+
+	data, totalItems, err := cs.ComicStruct.GetData(page, limit)
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"status": "Failed",
+			"status":   "Failed",
 			"messages": "Failed to get data",
-			"error": err,
+			"error":    err.Error(),
 		})
 	}
 
+	totalPages := int(math.Ceil(float64(totalItems) / float64(limit)))
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"status": "Success",
-		"messages": "Get Data Success",
+		"pagination": echo.Map{
+			"current_page": page,
+			"total_items":  totalItems,
+			"total_pages":  totalPages,
+		},
 		"data": data,
 	})
 }

@@ -13,7 +13,7 @@ import (
 
 type ComicStruct interface {
 	CreateData(data *models.Comic) error
-	GetData() ([]models.Comic, error)
+	GetData(page, limit int) ([]models.Comic, int, error)
 	GetDataById(id string) (models.Comic, error)
 	UpdateData(id string, data *models.Comic) error
 	DeleteData(id string) error
@@ -64,24 +64,47 @@ func (c *comicService) CreateData(data *models.Comic) error {
 	return err
 }
 
-func (c *comicService) GetData() ([]models.Comic, error) {
+func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
 	ctx := context.Background()
 	var comics []models.Comic
+	comicsCollection := c.db.Collection("comics")
 
-	data := c.db.Collection("comics").Documents(ctx)
-	docs, err := data.GetAll()
+
+	aggQuery := comicsCollection.NewAggregationQuery().WithCount("all")
+
+	results, err := aggQuery.Get(ctx)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	totalItems, ok := results["all"].(int64)
+	if !ok {
+		return nil, 0, errors.New("gagal mendapatkan total item dari hasil agregasi")
+	}
+
+
+	offset := (page - 1) * limit
+
+	iter := comicsCollection.
+		OrderBy("id", firestore.Asc).
+		Limit(limit).
+		Offset(offset).
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, 0, err
 	}
 
 	for _, doc := range docs {
 		var comic models.Comic
 		if err := doc.DataTo(&comic); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		comics = append(comics, comic)
 	}
-	return comics, nil
+
+	return comics, int(totalItems), nil
 }
 
 func (c *comicService) GetDataById(id string) (models.Comic, error) {
