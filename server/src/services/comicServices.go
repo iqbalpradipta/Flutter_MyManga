@@ -70,8 +70,6 @@ func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
 	var comics []models.Comic
 	comicsCollection := c.db.Collection("comics")
 
-	// --- PERBAIKAN FINAL UNTUK MENGHITUNG TOTAL ITEM ---
-
 	aggQuery := comicsCollection.NewAggregationQuery().WithCount("all")
 	results, err := aggQuery.Get(ctx)
 	if err != nil {
@@ -80,21 +78,17 @@ func (c *comicService) GetData(page, limit int) ([]models.Comic, int, error) {
 
 	countValue, ok := results["all"]
 	if !ok {
-		return []models.Comic{}, 0, nil // Koleksi kosong, kembalikan nilai nol
+		return []models.Comic{}, 0, nil 
 	}
 
-	// 1. Assert tipe data ke *firestorepb.Value
 	valueProto, ok := countValue.(*firestorepb.Value)
 	if !ok {
 		return nil, 0, errors.New("gagal mengonversi hasil agregasi ke tipe proto")
 	}
 
-	// 2. Ambil nilai integer dari dalam objek proto tersebut
 	totalItems := valueProto.GetIntegerValue()
 
-	// --- AKHIR PERBAIKAN ---
 
-	// Jika tidak ada item, tidak perlu query lagi
 	if totalItems == 0 {
 		return []models.Comic{}, 0, nil
 	}
