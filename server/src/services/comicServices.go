@@ -3,17 +3,21 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 
 	"cloud.google.com/go/firestore"
 	"github.com/iqbalpradipta/Flutter_MyManga/tree/main/server/src/models"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type ComicStruct interface {
-	Create(data *models.Comic) error
+	CreateData(data *models.Comic) error
 	GetData() ([]models.Comic, error)
-	GetDataByid(id string) (models.Comic, error)
+	GetDataById(id string) (models.Comic, error)
 	UpdateData(id string, data *models.Comic) error
-	Delete(id string) error
+	DeleteData(id string) error
+	ImportFromJSON(data []models.Comic) (int, error)
 }
 
 type comicService struct {
@@ -24,10 +28,39 @@ func NewComicService(db *firestore.Client) ComicStruct {
 	return &comicService{db}
 }
 
-func (c *comicService) Create(data *models.Comic) error {
+func (c *comicService) ImportFromJSON(data []models.Comic) (int, error) {
+	ctx := context.Background()
+	importedCount := 0
+
+	for _, comic := range data {
+		docRef := c.db.Collection("comics").Doc(comic.ID)
+
+		_, err := docRef.Get(ctx)
+
+		if err == nil {
+			log.Printf("Skipping comic ID %s, data sudah ada.", comic.ID)
+			continue 
+		}
+
+		if status.Code(err) != codes.NotFound {
+			log.Printf("Error saat memeriksa comic ID %s: %v", comic.ID, err)
+			continue
+		}
+
+		if _, err := docRef.Set(ctx, comic); err != nil {
+			log.Printf("Gagal impor comic %s: %v", comic.ID, err)
+		} else {
+			importedCount++
+		}
+	}
+
+	return importedCount, nil
+}
+
+func (c *comicService) CreateData(data *models.Comic) error {
 	ctx := context.Background()
 
-	_, err := c.db.Collection("comic").Doc(data.ID).Set(ctx, data)
+	_, err := c.db.Collection("comics").Doc(data.ID).Set(ctx, data)
 	return err
 }
 
@@ -35,8 +68,9 @@ func (c *comicService) GetData() ([]models.Comic, error) {
 	ctx := context.Background()
 	var comics []models.Comic
 
-	data := c.db.Collection("comic").Documents(ctx)
-	docs, err := data.GetAll(); if err != nil {
+	data := c.db.Collection("comics").Documents(ctx)
+	docs, err := data.GetAll()
+	if err != nil {
 		return nil, err
 	}
 
@@ -50,52 +84,51 @@ func (c *comicService) GetData() ([]models.Comic, error) {
 	return comics, nil
 }
 
-func (c *comicService) GetDataByid(id string) (models.Comic, error) {
+func (c *comicService) GetDataById(id string) (models.Comic, error) {
 	ctx := context.Background()
 	var comic models.Comic
 
-	data := c.db.Collection("comic").Where("id", "==", id).Limit(1).Documents(ctx)
+	data := c.db.Collection("comics").Where("id", "==", id).Limit(1).Documents(ctx)
 	docs, err := data.GetAll()
 	if err != nil {
-        return comic, err
-    }
+		return comic, err
+	}
 
-    if len(docs) == 0 {
-        return comic, errors.New("comic not found")
-    }
+	if len(docs) == 0 {
+		return comic, errors.New("comic not found")
+	}
 
-    if err := docs[0].DataTo(&comic); err != nil {
-        return comic, err
-    }
+	if err := docs[0].DataTo(&comic); err != nil {
+		return comic, err
+	}
 
-    return comic, nil
+	return comic, nil
 }
 
 func (c *comicService) UpdateData(id string, data *models.Comic) error {
 	ctx := context.Background()
 
-	docRef := c.db.Collection("comic").Doc(id)
+	docRef := c.db.Collection("comics").Doc(id)
 
 	_, err := docRef.Update(ctx, []firestore.Update{
 		{Path: "title", Value: data.Title},
 		{Path: "type", Value: data.Type},
-		{Path: "genre", Value: data.Genre},
+		{Path: "genre", Value: data.Genres},
 		{Path: "status", Value: data.Status},
 		{Path: "author", Value: data.Author},
-		{Path: "release", Value: data.Release},
-		{Path: "update_on", Value: data.Update_on},
-		{Path: "comic_image", Value: data.Comic_image},
-		{Path: "comic_url", Value: data.Comic_url},
+		{Path: "release", Value: data.Released},
+		{Path: "update_on", Value: data.UpdateOn},
+		{Path: "comic_image", Value: data.ComicImage},
+		{Path: "comic_url", Value: data.ComicUrl},
 		{Path: "rating", Value: data.Rating},
 	})
 	return err
 }
 
-func (c *comicService) Delete(id string) error {
+func (c *comicService) DeleteData(id string) error {
 	ctx := context.Background()
 
-    _, err := c.db.Collection("comics").Doc(id).Delete(ctx)
+	_, err := c.db.Collection("comics").Doc(id).Delete(ctx)
 
-    return err
+	return err
 }
-
