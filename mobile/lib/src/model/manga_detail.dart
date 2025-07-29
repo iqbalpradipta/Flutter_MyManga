@@ -1,5 +1,5 @@
 class MangaDetail {
-  final int id;
+  final String id;
   final String title;
   final String type;
   final String imageUrl;
@@ -31,7 +31,7 @@ class MangaDetail {
     List<String> genres = genresList.cast<String>();
 
     return MangaDetail(
-      id: json['id'] ?? 0,
+      id: json['id'] ?? '0',
       title: json['title'] ?? 'No Title',
       type: json['type'] ?? 'N/A',
       imageUrl: json['comic_image'] ?? '',
@@ -41,6 +41,39 @@ class MangaDetail {
       status: json['status'] ?? 'N/A',
       released: json['released'] ?? 'N/A',
       genres: genres,
+    );
+  }
+}
+
+class MangaSummary {
+  final String id;
+  final String title;
+  final String imageUrl;
+  final String type;
+  final String status;
+  final String rating;
+  final List<String> genres;
+
+  MangaSummary({
+    required this.id,
+    required this.title,
+    required this.imageUrl,
+    this.type = 'Manga',
+    this.status = 'Ongoing',
+    this.rating = 'N/A',
+    this.genres = const [],
+  });
+
+  factory MangaSummary.fromJson(Map<String, dynamic> json) {
+    var genresList = json['genres'] as List? ?? [];
+    return MangaSummary(
+      id: json['id']?.toString() ?? '0',
+      title: json['title'] ?? 'No Title',
+      imageUrl: json['comic_image'] ?? '',
+      type: json['type'] ?? 'Manga',
+      status: json['status'] ?? 'Ongoing',
+      rating: json['rating'] ?? 'N/A',
+      genres: genresList.cast<String>(),
     );
   }
 }

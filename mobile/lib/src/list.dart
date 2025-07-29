@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:manga_bal/src/detail.dart';
 import 'dart:convert';
 
-import 'package:manga_bal/src/detail.dart';
+import 'package:manga_bal/src/model/manga_detail.dart';
 
-class MangaSummary {
-  final int id;
-  final String title;
-  final String imageUrl;
+Future<List<MangaSummary>> fetchManga({
+  required int page,
+  String? query,
+}) async {
+  final Map<String, String> queryParams = {
+    'page': page.toString(),
+    'limit': '30',
+  };
 
-  MangaSummary({required this.id, required this.title, required this.imageUrl});
-
-  factory MangaSummary.fromJson(Map<String, dynamic> json) {
-    return MangaSummary(
-      id: json['id'],
-      title: json['title'],
-      imageUrl: json['comic_image'],
-    );
+  if (query != null && query.isNotEmpty && query != 'All') {
+    queryParams['q'] = query;
   }
-}
 
-Future<List<MangaSummary>> fetchMangaList() async {
-  final response = await http.get(
-    Uri.parse('https://api.npoint.io/3178c2ddc4be5b84c2e9/'),
-  );
+  final uri = Uri.parse('https://flutter-my-manga.vercel.app/api/v1/comic')
+      .replace(queryParameters: queryParams);
+
+  final response = await http.get(uri);
+
   if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body);
+    final decodedResponse = jsonDecode(response.body);
+    final List<dynamic> data = decodedResponse['data'];
     return data.map((json) => MangaSummary.fromJson(json)).toList();
   } else {
     throw Exception('Gagal memuat daftar manga');
@@ -40,53 +40,88 @@ class ListManga extends StatefulWidget {
 }
 
 class _ListMangaState extends State<ListManga> {
-  List<MangaSummary> _allManga = [];
-  List<MangaSummary> _filteredManga = [];
-
-  bool _isLoading = true;
+  final List<MangaSummary> _mangaList = [];
   String? _error;
+  bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMoreData = true;
+
+  int _currentPage = 1;
+  final ScrollController _scrollController = ScrollController();
   String _selectedFilter = 'All';
 
   @override
   void initState() {
     super.initState();
-    _loadMangaData();
+    _loadInitialData();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _loadMangaData() async {
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMangaData({bool isRefreshing = false}) async {
+    if (_isLoadingMore || (!_hasMoreData && !isRefreshing)) return;
+
+    setState(() {
+      if (isRefreshing) {
+        _isLoading = true;
+      } else {
+        _isLoadingMore = true;
+      }
+    });
+
     try {
-      final data = await fetchMangaList();
+      final newManga = await fetchManga(
+        page: _currentPage,
+        query: _selectedFilter,
+      );
+
       setState(() {
-        _allManga = data;
-        _filteredManga = data;
-        _isLoading = false;
+        if (isRefreshing) {
+          _mangaList.clear();
+        }
+        _mangaList.addAll(newManga);
+        _currentPage++;
+        if (newManga.length < 30) {
+          _hasMoreData = false;
+        }
       });
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _isLoading = false;
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _loadInitialData() async {
+    _currentPage = 1;
+    _hasMoreData = true;
+    await _loadMangaData(isRefreshing: true);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+      _loadMangaData();
     }
   }
 
-  void _filterManga(String filter) {
+  void _onFilterSelected(String filter) {
     setState(() {
       _selectedFilter = filter;
-      if (filter == 'All') {
-        _filteredManga = _allManga;
-      } else if (filter == '0-9') {
-        _filteredManga = _allManga.where((manga) {
-          final firstChar = manga.title.trim().substring(0, 1);
-          return int.tryParse(firstChar) != null;
-        }).toList();
-      } else {
-        _filteredManga = _allManga
-            .where(
-              (manga) => manga.title.trim().toUpperCase().startsWith(filter),
-            )
-            .toList();
-      }
     });
+    _loadInitialData();
   }
 
   @override
@@ -102,7 +137,7 @@ class _ListMangaState extends State<ListManga> {
         children: [
           FilterBar(
             selectedFilter: _selectedFilter,
-            onFilterSelected: _filterManga,
+            onFilterSelected: _onFilterSelected,
           ),
           Expanded(child: _buildContent()),
         ],
@@ -115,22 +150,14 @@ class _ListMangaState extends State<ListManga> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(
-        child: Text(
-          'Error: $_error',
-          style: const TextStyle(color: Colors.white),
-        ),
-      );
+      return Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.white)));
     }
-    if (_filteredManga.isEmpty) {
-      return const Center(
-        child: Text(
-          'Tidak ada manga yang cocok.',
-          style: TextStyle(color: Colors.white),
-        ),
-      );
+    if (_mangaList.isEmpty) {
+      return const Center(child: Text('Tidak ada manga yang cocok.', style: TextStyle(color: Colors.white)));
     }
+
     return GridView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(8.0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -138,9 +165,13 @@ class _ListMangaState extends State<ListManga> {
         mainAxisSpacing: 10.0,
         childAspectRatio: 2 / 3.2,
       ),
-      itemCount: _filteredManga.length,
+      itemCount: _mangaList.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final manga = _filteredManga[index];
+        if (index == _mangaList.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final manga = _mangaList[index];
         return InkWell(
           onTap: () {
             Navigator.push(
@@ -160,10 +191,7 @@ class _ListMangaState extends State<ListManga> {
                     manga.imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
-                      );
+                      return const Icon(Icons.image_not_supported, color: Colors.grey);
                     },
                   ),
                 ),
@@ -192,16 +220,11 @@ class FilterBar extends StatelessWidget {
   final String selectedFilter;
   final Function(String) onFilterSelected;
 
-  const FilterBar({
-    super.key,
-    required this.selectedFilter,
-    required this.onFilterSelected,
-  });
+  const FilterBar({super.key, required this.selectedFilter, required this.onFilterSelected});
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['All', '0-9', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
-
+    final filters = ['All', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -220,9 +243,7 @@ class FilterBar extends StatelessWidget {
                 color: isSelected ? Colors.white : Colors.grey.shade300,
                 fontWeight: FontWeight.bold,
               ),
-              backgroundColor: isSelected
-                  ? Colors.deepPurple.shade400
-                  : Colors.grey.shade800,
+              backgroundColor: isSelected ? Colors.deepPurple.shade400 : Colors.grey.shade800,
               onPressed: () => onFilterSelected(filter),
               side: BorderSide.none,
             ),

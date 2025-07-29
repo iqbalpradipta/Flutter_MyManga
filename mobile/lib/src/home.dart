@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -5,54 +6,41 @@ import 'package:flutter/material.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/list.dart';
+import 'package:manga_bal/src/model/manga_detail.dart';
 import 'package:manga_bal/src/search.dart';
 import 'package:manga_bal/src/widget/bottom_nav.dart';
 import 'package:manga_bal/src/detail.dart';
 
-class MangaSummary {
-  final int id;
-  final String title;
-  final String imageUrl;
-
-  MangaSummary({required this.id, required this.title, required this.imageUrl});
-
-  factory MangaSummary.fromJson(Map<String, dynamic> json) {
-    return MangaSummary(
-      id: json['id'],
-      title: json['title'],
-      imageUrl: json['comic_image'],
-    );
+Future<List<MangaSummary>> fetchMangaByGenre(String genre) async {
+  String apiUrl = 'https://flutter-my-manga.vercel.app/api/v1/comic?limit=30';
+  if (genre != 'Populer') {
+    apiUrl += '&genre=$genre';
   }
-}
 
-Future<List<MangaSummary>> fetchMangaList() async {
-  final response = await http.get(
-    Uri.parse('https://api.npoint.io/3178c2ddc4be5b84c2e9/'),
-  );
+  final response = await http.get(Uri.parse(apiUrl));
+
   if (response.statusCode == 200) {
-    List<dynamic> data = jsonDecode(response.body);
+    final decodedResponse = jsonDecode(response.body);
+    final List<dynamic> data = decodedResponse['data'];
     return data.map((json) => MangaSummary.fromJson(json)).toList();
   } else {
-    throw Exception('Gagal memuat daftar manga');
+    throw Exception('Gagal memuat daftar manga untuk genre: $genre');
   }
 }
 
 class Home extends StatefulWidget {
   const Home({super.key});
-
   @override
   State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-
   static const List<Widget> _widgetOptions = <Widget>[
     MyHome(),
     SearchPage(),
     ListManga(),
   ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -79,12 +67,55 @@ class MyHome extends StatefulWidget {
 }
 
 class _MyHomeState extends State<MyHome> {
-  late Future<List<MangaSummary>> _mangaFuture;
+  List<MangaSummary> _mangaList = [];
+  List<MangaSummary> _featuredList = [];
+  bool _isLoading = true;
+  String? _error;
+  final List<String> _genres = [
+    'Populer',
+    'Action',
+    'Comedy',
+    'Romance',
+    'Fantasy',
+    'School Life',
+  ];
+  String _selectedGenre = 'Populer';
 
   @override
   void initState() {
     super.initState();
-    _mangaFuture = fetchMangaList();
+    _loadMangaForGenre(_selectedGenre);
+  }
+
+  Future<void> _loadMangaForGenre(String genre) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final data = await fetchMangaByGenre(genre);
+
+      List<MangaSummary> featured = List<MangaSummary>.from(data)
+        ..shuffle(Random());
+
+      setState(() {
+        _mangaList = data;
+        _featuredList = featured.take(5).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onGenreSelected(String genre) {
+    setState(() {
+      _selectedGenre = genre;
+    });
+    _loadMangaForGenre(genre);
   }
 
   @override
@@ -92,159 +123,357 @@ class _MyHomeState extends State<MyHome> {
     return Scaffold(
       backgroundColor: const Color(0xFF1F1D2B),
       body: SafeArea(
-        child: FutureBuilder<List<MangaSummary>>(
-          future: _mangaFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Gagal memuat data: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              );
-            } else if (snapshot.hasData) {
-              final mangaList = snapshot.data!;
-              return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const CustomAppBar(),
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CustomHeader(),
-                    SectionHeader(
-                      title: 'Recommendation Read',
-                      onSeeAll: () {},
+                    if (!_isLoading && _featuredList.isNotEmpty)
+                      FeaturedBanner(featuredManga: _featuredList),
+                    const SectionHeader(title: 'Category'),
+                    GenreFilterChips(
+                      genres: _genres,
+                      selectedGenre: _selectedGenre,
+                      onGenreSelected: _onGenreSelected,
                     ),
-                    RecommendationReadCarousel(mangaList: mangaList),
-                    SectionHeader(title: 'Suggested Manga', onSeeAll: () {}),
-                    SuggestedMangaGrid(mangaList: mangaList),
+                    const SectionHeader(title: 'Daftar Manga'),
+                    _buildContent(),
                   ],
                 ),
-              );
-            }
-            return const Center(
-              child: Text(
-                'Tidak ada manga.',
-                style: TextStyle(color: Colors.white),
               ),
-            );
-          },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 300,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return SizedBox(
+        height: 300,
+        child: Center(
+          child: Text(
+            'Gagal memuat data: $_error',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+    return MangaGrid(mangaList: _mangaList);
+  }
+}
+
+class CustomAppBar extends StatelessWidget {
+  const CustomAppBar({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'MangaBal',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.notifications_none,
+              size: 28,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class CustomHeader extends StatelessWidget {
-  const CustomHeader({super.key});
+class FeaturedBanner extends StatefulWidget {
+  final List<MangaSummary> featuredManga;
+  const FeaturedBanner({super.key, required this.featuredManga});
+
+  @override
+  State<FeaturedBanner> createState() => _FeaturedBannerState();
+}
+
+class _FeaturedBannerState extends State<FeaturedBanner> {
+  late PageController _pageController;
+  Timer? _timer;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    if (widget.featuredManga.length > 1) {
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      if (!mounted) return;
+      int nextPage = (_currentPage + 1) % widget.featuredManga.length;
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    if (widget.featuredManga.isEmpty) {
+      return const SizedBox(height: 200);
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0),
+      height: 200,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'MangaBal',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              Text(
-                "Selamat Datang di MangaBal",
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.featuredManga.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              final manga = widget.featuredManga[index];
+              return BannerItem(manga: manga);
+            },
           ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.search, color: Colors.white),
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.notifications_none, color: Colors.white),
-              ),
-            ],
+          Positioned(
+            bottom: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.featuredManga.length, (index) {
+                return Container(
+                  width: 8.0,
+                  height: 8.0,
+                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentPage == index ? Colors.white : Colors.white,
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class BannerItem extends StatelessWidget {
+  final MangaSummary manga;
+  const BannerItem({super.key, required this.manga});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.0),
+            child: manga.imageUrl.isNotEmpty
+                ? Image.network(manga.imageUrl, fit: BoxFit.cover)
+                : Container(
+                    color: Colors.grey.shade800,
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.0),
+            gradient: LinearGradient(
+              colors: [Colors.black, Colors.transparent],
+              begin: Alignment.bottomCenter,
+              end: Alignment.center,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Chip(
+                      label: Text(
+                        manga.type,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      manga.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      manga.genres.take(3).join(', '),
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
 class SectionHeader extends StatelessWidget {
   final String title;
-  final VoidCallback onSeeAll;
-
-  const SectionHeader({super.key, required this.title, required this.onSeeAll});
-
+  const SectionHeader({super.key, required this.title});
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          TextButton(
-            onPressed: onSeeAll,
-            child: Text(
-              'See All >',
-              style: TextStyle(color: Colors.deepPurple.shade300),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 12.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     );
   }
 }
 
-class RecommendationReadCarousel extends StatefulWidget {
-  final List<MangaSummary> mangaList;
-  const RecommendationReadCarousel({super.key, required this.mangaList});
+class GenreFilterChips extends StatelessWidget {
+  final List<String> genres;
+  final String selectedGenre;
+  final Function(String) onGenreSelected;
 
-  @override
-  State<RecommendationReadCarousel> createState() =>
-      _RecommendationReadCarouselState();
-}
-
-class _RecommendationReadCarouselState
-    extends State<RecommendationReadCarousel> {
-  List<MangaSummary> shuffledList = [];
-
-  @override
-  void initState() {
-    super.initState();
-    shuffledList = List<MangaSummary>.from(widget.mangaList)..shuffle(Random());
-  }
+  const GenreFilterChips({
+    super.key,
+    required this.genres,
+    required this.selectedGenre,
+    required this.onGenreSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 240,
+      height: 40,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        itemCount: shuffledList.length,
+        itemCount: genres.length,
         itemBuilder: (context, index) {
-          return MangaCard(manga: shuffledList[index]);
+          final genre = genres[index];
+          final isSelected = genre == selectedGenre;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: ChoiceChip(
+              label: Text(genre),
+              selected: isSelected,
+              onSelected: (selected) => onGenreSelected(genre),
+              selectedColor: Colors.deepPurpleAccent,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade300,
+                fontWeight: FontWeight.bold,
+              ),
+              backgroundColor: const Color(0xFF252836),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              side: BorderSide.none,
+            ),
+          );
         },
       ),
+    );
+  }
+}
+
+class MangaGrid extends StatelessWidget {
+  final List<MangaSummary> mangaList;
+  const MangaGrid({super.key, required this.mangaList});
+
+  @override
+  Widget build(BuildContext context) {
+    if (mangaList.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            'Tidak ada manga untuk genre ini.',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16.0),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16.0,
+        mainAxisSpacing: 16.0,
+        childAspectRatio: 2 / 3.5,
+      ),
+      itemCount: mangaList.length,
+      itemBuilder: (context, index) {
+        return MangaCard(manga: mangaList[index]);
+      },
     );
   }
 }
@@ -264,64 +493,52 @@ class MangaCard extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        width: 150,
-        margin: const EdgeInsets.symmetric(horizontal: 4.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.0),
-                child: Image.network(
-                  manga.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Icon(Icons.error, color: Colors.grey),
-                  ),
-                ),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16.0),
+              child: manga.imageUrl.isNotEmpty
+                  ? Image.network(
+                      manga.imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(
+                            child: Icon(Icons.error, color: Colors.grey),
+                          ),
+                    )
+                  : Container(
+                      color: Colors.grey.shade800,
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              manga.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            manga.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+          Text(
+            manga.genres.take(2).join(', '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class SuggestedMangaGrid extends StatelessWidget {
-  final List<MangaSummary> mangaList;
-  const SuggestedMangaGrid({super.key, required this.mangaList});
-
-  @override
-  Widget build(BuildContext context) {
-    final suggestedItems = mangaList.reversed.take(4).toList();
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16.0),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16.0,
-        mainAxisSpacing: 16.0,
-        childAspectRatio: 2 / 3.5,
-      ),
-      itemCount: suggestedItems.length,
-      itemBuilder: (context, index) {
-        return MangaCard(manga: suggestedItems[index]);
-      },
     );
   }
 }
