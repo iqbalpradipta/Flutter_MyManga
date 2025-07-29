@@ -14,7 +14,7 @@ import (
 
 type ComicStruct interface {
 	CreateData(data *models.Comic) error
-	GetData(page, limit int, searchQuery string) ([]models.Comic, int, error)
+	GetData(page, limit int, searchQuery, genre, status string) ([]models.Comic, int, error)
 	GetDataById(id string) (models.Comic, error)
 	UpdateData(id string, data *models.Comic) error
 	DeleteData(id string) error
@@ -65,7 +65,7 @@ func (c *comicService) CreateData(data *models.Comic) error {
 	return err
 }
 
-func (c *comicService) GetData(page, limit int, searchQuery string) ([]models.Comic, int, error) {
+func (c *comicService) GetData(page, limit int, searchQuery, genre, status string) ([]models.Comic, int, error) {
 	ctx := context.Background()
 	var comics []models.Comic
 	comicsCollection := c.db.Collection("comics")
@@ -75,7 +75,15 @@ func (c *comicService) GetData(page, limit int, searchQuery string) ([]models.Co
 		query = query.Where("title", ">=", searchQuery).Where("title", "<=", searchQuery+"\uf8ff")
 	}
 
-	aggQuery := comicsCollection.NewAggregationQuery().WithCount("all")
+	if genre != "" {
+		query = query.Where("genres", "array-contains", genre)
+	}
+
+	if status != "" {
+		query = query.Where("status", "==", status)
+	}
+
+	aggQuery := query.NewAggregationQuery().WithCount("all")
 	results, err := aggQuery.Get(ctx)
 	if err != nil {
 		return nil, 0, err

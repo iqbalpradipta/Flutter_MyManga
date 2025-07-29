@@ -78,6 +78,8 @@ func (cs *ComicControllers) GetData(c echo.Context) error {
 	pageStr := c.QueryParam("page")
 	limitStr := c.QueryParam("limit")
 	searchQuery := c.QueryParam("q")
+	genreQuery := c.QueryParam("genre")
+	statusQuery := c.QueryParam("status")
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -89,7 +91,7 @@ func (cs *ComicControllers) GetData(c echo.Context) error {
 		limit = 20 
 	}
 
-	data, totalItems, err := cs.ComicStruct.GetData(page, limit, searchQuery)
+	data, totalItems, err := cs.ComicStruct.GetData(page, limit, searchQuery, genreQuery, statusQuery)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"status":   "Failed",
