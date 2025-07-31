@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:ui';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'package:manga_bal/src/chapter.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
@@ -22,16 +22,6 @@ class _DetailMangaState extends State<DetailManga> {
   void initState() {
     super.initState();
     _mangaDetailFuture = fetchMangaDetail(widget.mangaId);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-    });
-  }
-
-  @override
-  void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-        overlays: SystemUiOverlay.values);
-    super.dispose();
   }
 
   Future<MangaDetail> fetchMangaDetail(String id) async {
@@ -56,12 +46,22 @@ class _DetailMangaState extends State<DetailManga> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
           } else if (snapshot.hasData) {
             final manga = snapshot.data!;
             return MangaDetailBody(manga: manga);
           }
-          return const Center(child: Text("Tidak ada data.", style: TextStyle(color: Colors.white)));
+          return const Center(
+            child: Text(
+              "Tidak ada data.",
+              style: TextStyle(color: Colors.white),
+            ),
+          );
         },
       ),
     );
@@ -104,21 +104,27 @@ class MangaDetailBody extends StatelessWidget {
                   ),
                   actions: [
                     IconButton(
-                        icon: const Icon(Icons.favorite_border, color: Colors.white),
-                        onPressed: () {}),
+                      icon: const Icon(
+                        Icons.favorite_border,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {},
+                    ),
                     IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
-                        onPressed: () {}),
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      onPressed: () {},
+                    ),
                   ],
                   flexibleSpace: FlexibleSpaceBar(
                     background: Padding(
                       padding: EdgeInsets.only(
-                          top: kToolbarHeight +
-                              MediaQuery.of(context).padding.top),
+                        top:
+                            kToolbarHeight + MediaQuery.of(context).padding.top,
+                      ),
                       child: MangaInfoHeader(manga: manga),
                     ),
                   ),
-                  expandedHeight: 300,
+                  expandedHeight: 340,
                 ),
                 SliverPersistentHeader(
                   delegate: _SliverAppBarDelegate(
@@ -140,7 +146,9 @@ class MangaDetailBody extends StatelessWidget {
             body: TabBarView(
               children: [
                 ChapterList(
-                    chapters: manga.chapters, allChapters: manga.chapters),
+                  chapters: manga.chapters,
+                  allChapters: manga.chapters,
+                ),
                 DetailsTab(manga: manga),
               ],
             ),
@@ -164,49 +172,52 @@ class MangaInfoHeader extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12.0),
-            child: Image.network(manga.imageUrl,
-                width: 120, height: 180, fit: BoxFit.cover),
+            child: Image.network(
+              manga.imageUrl,
+              width: 120,
+              height: 180,
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 20.0),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(manga.title,
-                    style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
+                Text(
+                  manga.title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('By ${manga.author}',
-                    style: TextStyle(color: Colors.grey.shade300)),
+                Text(
+                  'By ${manga.author}',
+                  style: TextStyle(color: Colors.grey.shade300),
+                ),
                 const SizedBox(height: 8),
-                Text(manga.status,
-                    style: TextStyle(
-                        color: Colors.yellow.shade700,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  manga.status,
+                  style: TextStyle(
+                    color: Colors.yellow.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.yellow, size: 20),
                     const SizedBox(width: 4),
-                    Text(manga.rating,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      manga.rating,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurpleAccent,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 40, vertical: 12),
-                  ),
-                  child: const Text('Continue',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -217,37 +228,102 @@ class MangaInfoHeader extends StatelessWidget {
   }
 }
 
-class ChapterList extends StatelessWidget {
+class ChapterList extends StatefulWidget {
   final List<ChapterSummary> chapters;
   final List<ChapterSummary> allChapters;
-  const ChapterList(
-      {super.key, required this.chapters, required this.allChapters});
+  const ChapterList({
+    super.key,
+    required this.chapters,
+    required this.allChapters,
+  });
+
+  @override
+  State<ChapterList> createState() => _ChapterListState();
+}
+
+class _ChapterListState extends State<ChapterList> {
+  InterstitialAd? _interstitialAd;
+  final String _interstitialAdUnitId = "ca-app-pub-8675873135912570/5605941001";
+
+  @override
+  void initState() {
+    super.initState();
+    _createInterstitialAd();
+  }
+
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          _interstitialAd = null;
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAdAndNavigate(int index) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          _navigateToChapter(index);
+          ad.dispose();
+          _createInterstitialAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          _navigateToChapter(index);
+          ad.dispose();
+          _createInterstitialAd();
+        },
+      );
+      _interstitialAd!.show();
+      _interstitialAd = null;
+    } else {
+      _navigateToChapter(index);
+    }
+  }
+
+  void _navigateToChapter(int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ChapterPage(allChapters: widget.allChapters, initialIndex: index),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _interstitialAd?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      itemCount: chapters.length,
+      itemCount: widget.chapters.length,
       itemBuilder: (context, index) {
-        final chapter = chapters[index];
+        final chapter = widget.chapters[index];
         final cleanChapterTitle = chapter.title.replaceAll('\n', '').trim();
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 6.0),
           child: Row(
             children: [
               Expanded(
-                child: Text(cleanChapterTitle,
-                    style: const TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text(
+                  cleanChapterTitle,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChapterPage(
-                          allChapters: allChapters, initialIndex: index),
-                    ),
-                  );
+                  _showInterstitialAdAndNavigate(index);
                 },
                 icon: const Icon(Icons.play_arrow, size: 16),
                 label: Text('Baca ${cleanChapterTitle.split(" ").last}'),
@@ -255,7 +331,8 @@ class ChapterList extends StatelessWidget {
                   backgroundColor: const Color(0xFF252836),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
               ),
             ],
@@ -277,25 +354,37 @@ class DetailsTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Genres',
-              style:
-                  TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Genres',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8.0,
             runSpacing: 8.0,
             children: manga.genres
-                .map((genre) => Chip(
-                      label: Text(genre),
-                      backgroundColor: const Color(0xFF252836),
-                      labelStyle: const TextStyle(color: Colors.white),
-                    ))
+                .map(
+                  (genre) => Chip(
+                    label: Text(genre),
+                    backgroundColor: const Color(0xFF252836),
+                    labelStyle: const TextStyle(color: Colors.white),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 24),
-          const Text('Information',
-              style:
-                  TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Information',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
           InfoRow(label: 'Type', value: manga.type),
           InfoRow(label: 'Status', value: manga.status),
@@ -323,9 +412,14 @@ class InfoRow extends StatelessWidget {
             child: Text(label, style: TextStyle(color: Colors.grey.shade400)),
           ),
           Expanded(
-              child: Text(value,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold))),
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -343,7 +437,10 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(color: const Color(0xFF1F1D2B), child: _tabBar);
   }
 

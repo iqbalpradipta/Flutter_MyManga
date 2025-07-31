@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
 
 class ChapterPage extends StatefulWidget {
@@ -22,10 +23,15 @@ class _ChapterPageState extends State<ChapterPage> {
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
 
+  InterstitialAd? _interstitialAd;
+  final String _interstitialAdUnitId = "ca-app-pub-8675873135912570/5605941001";
+
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _enterImmersiveMode();
+    _createInterstitialAd();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _enterImmersiveMode();
@@ -53,10 +59,47 @@ class _ChapterPageState extends State<ChapterPage> {
     );
   }
 
+  void _createInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _interstitialAdUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          _interstitialAd = null;
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAdAndNavigate(int newIndex) {
+    if (_interstitialAd != null) {
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          _navigateToChapter(newIndex);
+          ad.dispose();
+          _createInterstitialAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          _navigateToChapter(newIndex);
+          ad.dispose();
+          _createInterstitialAd();
+        },
+      );
+      _interstitialAd!.show();
+      _interstitialAd = null;
+    } else {
+      _navigateToChapter(newIndex);
+    }
+  }
+
   @override
   void dispose() {
     _exitImmersiveMode();
     _scrollController.dispose();
+    _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -228,7 +271,9 @@ class _ChapterPageState extends State<ChapterPage> {
                       ElevatedButton.icon(
                         onPressed: !hasPrevious
                             ? null
-                            : () => _navigateToChapter(_currentIndex - 1),
+                            : () => _showInterstitialAdAndNavigate(
+                                _currentIndex - 1,
+                              ),
                         icon: const Icon(Icons.arrow_back),
                         label: const Text('Prev'),
                         style: ElevatedButton.styleFrom(
@@ -238,7 +283,9 @@ class _ChapterPageState extends State<ChapterPage> {
                       ElevatedButton.icon(
                         onPressed: !hasNext
                             ? null
-                            : () => _navigateToChapter(_currentIndex + 1),
+                            : () => _showInterstitialAdAndNavigate(
+                                _currentIndex + 1,
+                              ),
                         icon: const Icon(Icons.arrow_forward),
                         label: const Text('Next'),
                         style: ElevatedButton.styleFrom(
