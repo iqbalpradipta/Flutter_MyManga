@@ -51,6 +51,7 @@ func (c *comicService) ImportFromJSON(data []models.Comic) (int, error) {
 		if _, err := docRef.Set(ctx, comic); err != nil {
 			log.Printf("Gagal impor comic %s: %v", comic.ID, err)
 		} else {
+			log.Printf("Berhasil memproses komik: %s", comic.Title)
 			importedCount++
 		}
 	}
