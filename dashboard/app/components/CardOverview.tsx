@@ -13,7 +13,7 @@ function CardOverview({title, Logo}: Props ) {
         {Logo}
       </div>
       <div className="mt-5">
-        <div className="text-gray-500">{title}</div>
+        <div className="text-gray-100">{title}</div>
         <div className="text-gray-300">1000</div>
       </div>
     </div>
