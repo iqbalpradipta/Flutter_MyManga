@@ -4,23 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/detail.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
+import 'package:manga_bal/src/network_utils.dart';
 
 Future<List<MangaSummary>> fetchManga({
   required int page,
   String? query,
 }) async {
+  final hasInternet = await NetworkUtils.hasInternetAccess();
+  if (!hasInternet) {
+    throw Exception('Koneksi internet anda bermasalah !');
+  }
+  
   final Map<String, String> queryParams = {
     'page': page.toString(),
     'limit': '30',
   };
 
-  if (query != null && query.isNotEmpty && query != 'All') {
-    if (query == '#') {
-      queryParams['q'] = r'^[0-9]';
-      queryParams['regex'] = 'true';
-    } else {
-      queryParams['q'] = query;
-    }
+  // For number filter, we'll fetch all data and filter client-side
+  // since the server doesn't support regex queries
+  if (query != null && query.isNotEmpty && query != 'All' && query != '#') {
+    queryParams['q'] = query;
   }
 
   final uri = Uri.parse(
@@ -47,6 +50,7 @@ class ListManga extends StatefulWidget {
 
 class _ListMangaState extends State<ListManga> {
   final List<MangaSummary> _mangaList = [];
+  final List<MangaSummary> _allManga = []; // Store all manga for client-side filtering
   String? _error;
   bool _isLoading = true;
   bool _isLoadingMore = false;
@@ -84,15 +88,33 @@ class _ListMangaState extends State<ListManga> {
     try {
       final newManga = await fetchManga(
         page: _currentPage,
-        query: _selectedFilter,
+        query: _selectedFilter == '#' ? null : _selectedFilter,
       );
 
       setState(() {
         if (isRefreshing) {
           _mangaList.clear();
+          _allManga.clear();
         }
-        _mangaList.addAll(newManga);
+        
+        // For number filter, apply client-side filtering
+        if (_selectedFilter == '#') {
+          // Store all manga for potential future use
+          _allManga.addAll(newManga);
+          // Filter manga titles that start with a number (0-9)
+          final filteredManga = newManga.where((manga) {
+            final title = manga.title.trim();
+            if (title.isEmpty) return false;
+            final firstChar = title[0];
+            return firstChar.compareTo('0') >= 0 && firstChar.compareTo('9') <= 0;
+          }).toList();
+          _mangaList.addAll(filteredManga);
+        } else {
+          _mangaList.addAll(newManga);
+        }
+        
         _currentPage++;
+        // Check if we've reached the end of available data
         if (newManga.length < 30) {
           _hasMoreData = false;
         }
@@ -159,7 +181,9 @@ class _ListMangaState extends State<ListManga> {
     if (_error != null) {
       return Center(
         child: Text(
-          'Error: $_error',
+          _error!.contains('Koneksi internet anda bermasalah')
+              ? _error!
+              : 'Error: $_error',
           style: const TextStyle(color: Colors.white),
         ),
       );
@@ -247,7 +271,7 @@ class FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filters = ['All', '#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
+    final filters = ['All', '0-9', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8.0),

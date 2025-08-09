@@ -22,6 +22,9 @@ class _ChapterPageState extends State<ChapterPage> {
   bool _showUI = true;
   final ScrollController _scrollController = ScrollController();
   double _scrollProgress = 0.0;
+  final double _minZoom = 0.5;
+  final double _maxZoom = 3.0;
+  final TransformationController _transformationController = TransformationController();
 
   InterstitialAd? _interstitialAd;
   final String _interstitialAdUnitId = 'ca-app-pub-8675873135912570/5605941001';
@@ -95,10 +98,12 @@ class _ChapterPageState extends State<ChapterPage> {
     }
   }
 
+
   @override
   void dispose() {
     _exitImmersiveMode();
     _scrollController.dispose();
+    _transformationController.dispose();
     _interstitialAd?.dispose();
     super.dispose();
   }
@@ -116,6 +121,10 @@ class _ChapterPageState extends State<ChapterPage> {
           reverseTransitionDuration: Duration.zero,
         ),
       );
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _enterImmersiveMode();
+      });
     }
   }
 
@@ -133,35 +142,46 @@ class _ChapterPageState extends State<ChapterPage> {
             _showUI = !_showUI;
           });
         },
+        onDoubleTap: () {
+          setState(() {
+            _transformationController.value = Matrix4.identity();
+          });
+        },
         child: Stack(
           children: [
-            ListView.builder(
-              controller: _scrollController,
-              itemCount: currentChapter.pages.length,
-              itemBuilder: (context, pageIndex) {
-                return Image.network(
-                  currentChapter.pages[pageIndex],
-                  fit: BoxFit.fitWidth,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const SizedBox(
-                      height: 400,
-                      child: Center(child: CircularProgressIndicator()),
+            InteractiveViewer(
+              transformationController: _transformationController,
+              minScale: _minZoom,
+              maxScale: _maxZoom,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: List.generate(currentChapter.pages.length, (pageIndex) {
+                    return Image.network(
+                      currentChapter.pages[pageIndex],
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const SizedBox(
+                          height: 400,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20.0),
+                            child: Text(
+                              'Gagal memuat gambar',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        );
+                      },
                     );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20.0),
-                        child: Text(
-                          'Gagal memuat gambar',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                  }),
+                ),
+              ),
             ),
 
             AnimatedOpacity(

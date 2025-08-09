@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/detail.dart';
 import 'package:manga_bal/src/list.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
+import 'package:manga_bal/src/network_utils.dart';
 import 'package:manga_bal/src/search.dart';
 import 'package:manga_bal/src/widget/bottom_nav.dart';
 
@@ -14,6 +15,11 @@ Future<List<MangaSummary>> fetchManga({
   required int page,
   String? genre,
 }) async {
+  final hasInternet = await NetworkUtils.hasInternetAccess();
+  if (!hasInternet) {
+    throw Exception('Koneksi internet anda bermasalah !');
+  }
+
   final Map<String, String> queryParams = {
     'page': page.toString(),
     'limit': '30',
@@ -85,10 +91,29 @@ class _MyHomeState extends State<MyHome> {
   final List<String> _genres = [
     'Populer',
     'Action',
+    'Adventure',
     'Comedy',
     'Romance',
     'Fantasy',
     'School Life',
+    'Horror',
+    'Mystery',
+    'Drama',
+    'Slice of Life',
+    'Sports',
+    'Supernatural',
+    'Psychological',
+    'Mecha',
+    'Historical',
+    'Sci-Fi',
+    'Yaoi',
+    'Yuri',
+    'Ecchi',
+    'Harem',
+    'Shounen',
+    'Shoujo',
+    'Seinen',
+    'Josei',
   ];
   String _selectedGenre = 'Populer';
 
@@ -193,7 +218,9 @@ class _MyHomeState extends State<MyHome> {
                   : _error != null
                   ? Center(
                       child: Text(
-                        'Gagal memuat data: $_error',
+                        _error!.contains('Koneksi internet anda bermasalah')
+                            ? _error!
+                            : 'Gagal memuat data: $_error',
                         style: const TextStyle(color: Colors.white),
                       ),
                     )
@@ -207,7 +234,7 @@ class _MyHomeState extends State<MyHome> {
                               children: [
                                 if (_featuredList.isNotEmpty)
                                   FeaturedBanner(featuredManga: _featuredList),
-                                const SectionHeader(title: 'Category'),
+                                const SectionHeader(title: 'Genres'),
                                 GenreFilterChips(
                                   genres: _genres,
                                   selectedGenre: _selectedGenre,

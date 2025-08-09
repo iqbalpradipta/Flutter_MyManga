@@ -5,12 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/detail.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
+import 'package:manga_bal/src/network_utils.dart';
 
 Future<List<MangaSummary>> searchManga({
   String query = '',
   String? status,
   List<String> genres = const [],
 }) async {
+  final hasInternet = await NetworkUtils.hasInternetAccess();
+  if (!hasInternet) {
+    throw Exception('Koneksi internet anda bermasalah !');
+  }
+  
   final Map<String, dynamic> queryParams = {'limit': '50'};
   if (query.isNotEmpty) {
     queryParams['q'] = query;
@@ -184,7 +190,9 @@ class _SearchPageState extends State<SearchPage> {
                   : _error != null
                   ? Center(
                       child: Text(
-                        'Error: $_error',
+                        _error!.contains('Koneksi internet anda bermasalah')
+                            ? _error!
+                            : 'Error: $_error',
                         style: const TextStyle(color: Colors.white),
                       ),
                     )
@@ -394,12 +402,30 @@ class GenreFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final genres = {
-      'Sci-Fi': '💖',
-      'Horror': '👻',
-      'Sport': '⚽',
-      'Romance': '❤️',
-      'Comedy': '😂',
+      'Action': '👊',
       'Adventure': '🚀',
+      'Comedy': '😂',
+      'Drama': '🎭',
+      'Fantasy': '🧙',
+      'Historical': '🏛️',
+      'Horror': '👻',
+      'Mecha': '🤖',
+      'Mystery': '🔍',
+      'Psychological': '🧠',
+      'Romance': '❤️',
+      'School Life': '📚',
+      'Sci-Fi': '💖',
+      'Slice of Life': '🍃',
+      'Sports': '⚽',
+      'Supernatural': '✨',
+      'Yaoi': '👨‍❤️‍👨',
+      'Yuri': '👩‍❤️‍👩',
+      'Ecchi': '🍑',
+      'Harem': '👥',
+      'Shounen': '👦',
+      'Shoujo': '👧',
+      'Seinen': '👨',
+      'Josei': '👩',
     };
 
     return Wrap(

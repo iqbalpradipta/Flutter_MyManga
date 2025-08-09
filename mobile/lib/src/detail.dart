@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/chapter.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
+import 'package:manga_bal/src/network_utils.dart';
 
 class DetailManga extends StatefulWidget {
   const DetailManga({super.key, required this.mangaId});
@@ -25,6 +26,12 @@ class _DetailMangaState extends State<DetailManga> {
   }
 
   Future<MangaDetail> fetchMangaDetail(String id) async {
+    // Check internet connectivity first
+    final hasInternet = await NetworkUtils.hasInternetAccess();
+    if (!hasInternet) {
+      throw Exception('Koneksi internet anda bermasalah !');
+    }
+    
     final response = await http.get(
       Uri.parse('https://flutter-my-manga.vercel.app/api/v1/comic/$id'),
     );
@@ -48,7 +55,9 @@ class _DetailMangaState extends State<DetailManga> {
           } else if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Error: ${snapshot.error}',
+                snapshot.error.toString().contains('Koneksi internet anda bermasalah')
+                    ? snapshot.error.toString()
+                    : 'Error: ${snapshot.error}',
                 style: const TextStyle(color: Colors.white),
               ),
             );
