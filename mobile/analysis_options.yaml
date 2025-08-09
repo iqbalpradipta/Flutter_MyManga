@@ -9,20 +9,65 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
-linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
-  rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+analyzer:
+  strong-mode:
+    implicit-casts: false
+    implicit-dynamic: false
+  errors:
+    missing_return: error
+    missing_required_param: error
+    invalid_annotation_target: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
 
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_empty_else
+    - avoid_print
+    - avoid_unused_constructor_parameters
+    - await_only_futures
+    - camel_case_types
+    - cancel_subscriptions
+    - constant_identifier_names
+    - control_flow_in_finally
+    - directives_ordering
+    - empty_catches
+    - empty_constructor_bodies
+    - empty_statements
+    - hash_and_equals
+    - implementation_imports
+    - iterable_contains_unrelated_type
+    - library_names
+    - library_prefixes
+    - list_remove_unrelated_type
+    - non_constant_identifier_names
+    - package_api_docs
+    - package_names
+    - package_prefixed_library_names
+    - prefer_const_constructors
+    - prefer_final_fields
+    - prefer_final_locals
+    - prefer_initializing_formals
+    - prefer_interpolation_to_compose_strings
+    - prefer_is_empty
+    - prefer_is_not_empty
+    - prefer_single_quotes
+    - prefer_typing_uninitialized_variables
+    - slash_for_doc_comments
+    - sort_constructors_first
+    - sort_unnamed_constructors_first
+    - test_types_in_equals
+    - throw_in_finally
+    - type_init_formals
+    - unnecessary_brace_in_string_interps
+    - unnecessary_getters_setters
+    - unnecessary_new
+    - unnecessary_null_aware_assignments
+    - unnecessary_statements
+    - unrelated_type_equality_checks
+    - use_rethrow_when_possible
+    - valid_regexps
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

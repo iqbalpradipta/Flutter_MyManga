@@ -1,14 +1,4 @@
 class MangaDetail {
-  final String id;
-  final String title;
-  final String type;
-  final String imageUrl;
-  final String rating;
-  final List<ChapterSummary> chapters;
-  final String author;
-  final String status;
-  final String released;
-  final List<String> genres;
 
   MangaDetail({
     required this.id,
@@ -24,11 +14,11 @@ class MangaDetail {
   });
 
   factory MangaDetail.fromJson(Map<String, dynamic> json) {
-    var chaptersList = json['chapters'] as List? ?? [];
-    List<ChapterSummary> chapters = chaptersList.map((c) => ChapterSummary.fromJson(c)).toList();
+    final chaptersList = json['chapters'] as List? ?? [];
+    final List<ChapterSummary> chapters = chaptersList.map((c) => ChapterSummary.fromJson(c)).toList();
     
-    var genresList = json['genres'] as List? ?? [];
-    List<String> genres = genresList.cast<String>();
+    final genresList = json['genres'] as List? ?? [];
+    final List<String> genres = genresList.cast<String>();
 
     return MangaDetail(
       id: json['id'] ?? '0',
@@ -43,16 +33,19 @@ class MangaDetail {
       genres: genres,
     );
   }
+  final String id;
+  final String title;
+  final String type;
+  final String imageUrl;
+  final String rating;
+  final List<ChapterSummary> chapters;
+  final String author;
+  final String status;
+  final String released;
+  final List<String> genres;
 }
 
 class MangaSummary {
-  final String id;
-  final String title;
-  final String imageUrl;
-  final String type;
-  final String status;
-  final String rating;
-  final List<String> genres;
 
   MangaSummary({
     required this.id,
@@ -65,7 +58,7 @@ class MangaSummary {
   });
 
   factory MangaSummary.fromJson(Map<String, dynamic> json) {
-    var genresList = json['genres'] as List? ?? [];
+    final genresList = json['genres'] as List? ?? [];
     return MangaSummary(
       id: json['id']?.toString() ?? '0',
       title: json['title'] ?? 'No Title',
@@ -76,19 +69,26 @@ class MangaSummary {
       genres: genresList.cast<String>(),
     );
   }
+  final String id;
+  final String title;
+  final String imageUrl;
+  final String type;
+  final String status;
+  final String rating;
+  final List<String> genres;
 }
 
 class ChapterSummary {
-  final String title;
-  final List<String> pages;
 
   ChapterSummary({required this.title, required this.pages});
 
   factory ChapterSummary.fromJson(Map<String, dynamic> json) {
-    var pagesList = json['images'] as List? ?? [];
+    final pagesList = json['images'] as List? ?? [];
     return ChapterSummary(
       title: json['chapter_title'] ?? 'No Title',
       pages: pagesList.cast<String>(),
     );
   }
+  final String title;
+  final List<String> pages;
 }

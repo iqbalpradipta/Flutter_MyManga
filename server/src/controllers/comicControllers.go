@@ -3,6 +3,7 @@ package controllers
 import (
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/iqbalpradipta/Flutter_MyManga/tree/main/server/src/models"
@@ -80,6 +81,13 @@ func (cs *ComicControllers) GetData(c echo.Context) error {
 	searchQuery := c.QueryParam("q")
 	genreQuery := c.QueryParam("genre")
 	statusQuery := c.QueryParam("status")
+
+	if searchQuery != "" {
+		decodedQuery, err := url.QueryUnescape(searchQuery)
+		if err == nil {
+			searchQuery = decodedQuery
+		}
+	}
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -185,6 +193,3 @@ func(cs *ComicControllers) DeleteData(c echo.Context) error {
 		"data": data,
 	})
 }
-
-
-

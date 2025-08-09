@@ -4,14 +4,14 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
 
 class ChapterPage extends StatefulWidget {
-  final List<ChapterSummary> allChapters;
-  final int initialIndex;
-
   const ChapterPage({
     super.key,
     required this.allChapters,
     required this.initialIndex,
   });
+
+  final List<ChapterSummary> allChapters;
+  final int initialIndex;
 
   @override
   State<ChapterPage> createState() => _ChapterPageState();
@@ -24,7 +24,7 @@ class _ChapterPageState extends State<ChapterPage> {
   double _scrollProgress = 0.0;
 
   InterstitialAd? _interstitialAd;
-  final String _interstitialAdUnitId = "ca-app-pub-8675873135912570/5605941001";
+  final String _interstitialAdUnitId = 'ca-app-pub-8675873135912570/5605941001';
 
   @override
   void initState() {
@@ -186,7 +186,7 @@ class _ChapterPageState extends State<ChapterPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -234,7 +234,7 @@ class _ChapterPageState extends State<ChapterPage> {
               vertical: 8.0,
               horizontal: 16.0,
             ),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
@@ -305,16 +305,16 @@ class _ChapterPageState extends State<ChapterPage> {
 }
 
 class ChapterDropdown extends StatelessWidget {
-  final List<ChapterSummary> allChapters;
-  final int currentIndex;
-  final Function(int) onChapterSelected;
-
   const ChapterDropdown({
     super.key,
     required this.allChapters,
     required this.currentIndex,
     required this.onChapterSelected,
   });
+
+  final List<ChapterSummary> allChapters;
+  final int currentIndex;
+  final Function(int) onChapterSelected;
 
   @override
   Widget build(BuildContext context) {

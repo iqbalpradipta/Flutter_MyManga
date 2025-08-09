@@ -1,8 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/detail.dart';
-import 'dart:convert';
-
 import 'package:manga_bal/src/model/manga_detail.dart';
 
 Future<List<MangaSummary>> fetchManga({
@@ -15,11 +15,17 @@ Future<List<MangaSummary>> fetchManga({
   };
 
   if (query != null && query.isNotEmpty && query != 'All') {
-    queryParams['q'] = query;
+    if (query == '#') {
+      queryParams['q'] = r'^[0-9]';
+      queryParams['regex'] = 'true';
+    } else {
+      queryParams['q'] = query;
+    }
   }
 
-  final uri = Uri.parse('https://flutter-my-manga.vercel.app/api/v1/comic')
-      .replace(queryParameters: queryParams);
+  final uri = Uri.parse(
+    'https://flutter-my-manga.vercel.app/api/v1/comic',
+  ).replace(queryParameters: queryParams);
 
   final response = await http.get(uri);
 
@@ -104,7 +110,7 @@ class _ListMangaState extends State<ListManga> {
       }
     }
   }
-  
+
   Future<void> _loadInitialData() async {
     _currentPage = 1;
     _hasMoreData = true;
@@ -112,7 +118,8 @@ class _ListMangaState extends State<ListManga> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 300) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
       _loadMangaData();
     }
   }
@@ -150,10 +157,20 @@ class _ListMangaState extends State<ListManga> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
-      return Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.white)));
+      return Center(
+        child: Text(
+          'Error: $_error',
+          style: const TextStyle(color: Colors.white),
+        ),
+      );
     }
     if (_mangaList.isEmpty) {
-      return const Center(child: Text('Tidak ada manga yang cocok.', style: TextStyle(color: Colors.white)));
+      return const Center(
+        child: Text(
+          'Tidak ada manga yang cocok.',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
     }
 
     return GridView.builder(
@@ -191,7 +208,10 @@ class _ListMangaState extends State<ListManga> {
                     manga.imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.image_not_supported, color: Colors.grey);
+                      return const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.grey,
+                      );
                     },
                   ),
                 ),
@@ -217,14 +237,17 @@ class _ListMangaState extends State<ListManga> {
 }
 
 class FilterBar extends StatelessWidget {
+  const FilterBar({
+    super.key,
+    required this.selectedFilter,
+    required this.onFilterSelected,
+  });
   final String selectedFilter;
   final Function(String) onFilterSelected;
 
-  const FilterBar({super.key, required this.selectedFilter, required this.onFilterSelected});
-
   @override
   Widget build(BuildContext context) {
-    final filters = ['All', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
+    final filters = ['All', '#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -243,7 +266,9 @@ class FilterBar extends StatelessWidget {
                 color: isSelected ? Colors.white : Colors.grey.shade300,
                 fontWeight: FontWeight.bold,
               ),
-              backgroundColor: isSelected ? Colors.deepPurple.shade400 : Colors.grey.shade800,
+              backgroundColor: isSelected
+                  ? Colors.deepPurple.shade400
+                  : Colors.grey.shade800,
               onPressed: () => onFilterSelected(filter),
               side: BorderSide.none,
             ),

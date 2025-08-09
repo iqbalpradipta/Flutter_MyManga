@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:ui';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/chapter.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
 
 class DetailManga extends StatefulWidget {
-  final String mangaId;
   const DetailManga({super.key, required this.mangaId});
+  final String mangaId;
 
   @override
   State<DetailManga> createState() => _DetailMangaState();
@@ -58,7 +58,7 @@ class _DetailMangaState extends State<DetailManga> {
           }
           return const Center(
             child: Text(
-              "Tidak ada data.",
+              'Tidak ada data.',
               style: TextStyle(color: Colors.white),
             ),
           );
@@ -69,8 +69,9 @@ class _DetailMangaState extends State<DetailManga> {
 }
 
 class MangaDetailBody extends StatelessWidget {
-  final MangaDetail manga;
   const MangaDetailBody({super.key, required this.manga});
+
+  final MangaDetail manga;
 
   @override
   Widget build(BuildContext context) {
@@ -160,8 +161,9 @@ class MangaDetailBody extends StatelessWidget {
 }
 
 class MangaInfoHeader extends StatelessWidget {
-  final MangaDetail manga;
   const MangaInfoHeader({super.key, required this.manga});
+
+  final MangaDetail manga;
 
   @override
   Widget build(BuildContext context) {
@@ -229,13 +231,14 @@ class MangaInfoHeader extends StatelessWidget {
 }
 
 class ChapterList extends StatefulWidget {
-  final List<ChapterSummary> chapters;
-  final List<ChapterSummary> allChapters;
   const ChapterList({
     super.key,
     required this.chapters,
     required this.allChapters,
   });
+
+  final List<ChapterSummary> chapters;
+  final List<ChapterSummary> allChapters;
 
   @override
   State<ChapterList> createState() => _ChapterListState();
@@ -243,7 +246,7 @@ class ChapterList extends StatefulWidget {
 
 class _ChapterListState extends State<ChapterList> {
   InterstitialAd? _interstitialAd;
-  final String _interstitialAdUnitId = "ca-app-pub-8675873135912570/5605941001";
+  final String _interstitialAdUnitId = 'ca-app-pub-8675873135912570/5605941001';
 
   @override
   void initState() {
@@ -344,8 +347,9 @@ class _ChapterListState extends State<ChapterList> {
 }
 
 class DetailsTab extends StatelessWidget {
-  final MangaDetail manga;
   const DetailsTab({super.key, required this.manga});
+
+  final MangaDetail manga;
 
   @override
   Widget build(BuildContext context) {
@@ -397,9 +401,9 @@ class DetailsTab extends StatelessWidget {
 }
 
 class InfoRow extends StatelessWidget {
+  const InfoRow({super.key, required this.label, required this.value});
   final String label;
   final String value;
-  const InfoRow({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

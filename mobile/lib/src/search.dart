@@ -1,45 +1,36 @@
 import 'dart:async';
-
-import 'package:flutter/material.dart';
-
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:manga_bal/src/detail.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
 
-
-Map<String, dynamic> _buildQueryParameters(
-  String query,
-  String? status,
-  List<String> genres,
-) {
-  final queryParameters = {'limit': '50'};
-  if (query.isNotEmpty) {
-    queryParameters['q'] = query;
-  }
-  if (status != null) {
-    queryParameters['status'] = status;
-  }
-  if (genres.isNotEmpty) {
-    queryParameters['genre'] = genres.join(',');
-  }
-  return queryParameters;
-}
-
 Future<List<MangaSummary>> searchManga({
-  required String query,
+  String query = '',
   String? status,
   List<String> genres = const [],
 }) async {
-  final queryParameters = _buildQueryParameters(query, status, genres);
-  final uri = Uri.parse('https://flutter-my-manga.vercel.app/api/v1/comic')
-      .replace(queryParameters: queryParameters);
+  final Map<String, dynamic> queryParams = {'limit': '50'};
+  if (query.isNotEmpty) {
+    queryParams['q'] = query;
+  }
+  if (status != null) {
+    queryParams['status'] = status;
+  }
+  if (genres.isNotEmpty) {
+    queryParams['genre'] = genres.join(',');
+  }
+
+  final uri = Uri.parse(
+    'https://flutter-my-manga.vercel.app/api/v1/comic',
+  ).replace(queryParameters: queryParams);
 
   final response = await http.get(uri);
   if (response.statusCode == 200) {
-    final jsonData = jsonDecode(response.body);
-    return jsonData.map((json) => MangaSummary.fromJson(json)).toList();
+    final decodedResponse = jsonDecode(response.body);
+    final List<dynamic> data = decodedResponse['data'];
+    return data.map((json) => MangaSummary.fromJson(json)).toList();
   } else {
     throw Exception('Gagal melakukan pencarian manga');
   }
@@ -54,7 +45,6 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  
   List<MangaSummary> _searchResults = [];
   bool _isSearching = false;
   String? _error;
@@ -71,9 +61,11 @@ class _SearchPageState extends State<SearchPage> {
 
   void _triggerSearch() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
-    _debounce = Timer(const Duration(milliseconds: 500), () async {
-      if (_searchController.text.isEmpty && _selectedStatus == null && _selectedGenres.isEmpty) {
+
+    _debounce = Timer(const Duration(milliseconds: 900), () async {
+      if (_searchController.text.isEmpty &&
+          _selectedStatus == null &&
+          _selectedGenres.isEmpty) {
         setState(() {
           _searchResults = [];
           _isSearching = false;
@@ -84,6 +76,7 @@ class _SearchPageState extends State<SearchPage> {
 
       setState(() {
         _isSearching = true;
+        _error = null;
       });
 
       try {
@@ -94,14 +87,17 @@ class _SearchPageState extends State<SearchPage> {
         );
         setState(() {
           _searchResults = results;
-          _isSearching = false;
-          _error = null;
         });
       } catch (e) {
         setState(() {
           _error = e.toString();
-          _isSearching = false;
         });
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSearching = false;
+          });
+        }
       }
     });
   }
@@ -138,7 +134,10 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool isSearchActive = _searchController.text.isNotEmpty || _selectedStatus != null || _selectedGenres.isNotEmpty;
+    final bool isSearchActive =
+        _searchController.text.isNotEmpty ||
+        _selectedStatus != null ||
+        _selectedGenres.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1F1D2B),
@@ -183,15 +182,20 @@ class _SearchPageState extends State<SearchPage> {
               child: _isSearching
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.white)))
-                      : isSearchActive
-                          ? SearchResultList(results: _searchResults)
-                          : InitialSearchFilters(
-                              onStatusSelected: _onStatusSelected,
-                              onGenreSelected: _onGenreSelected,
-                              selectedStatus: _selectedStatus,
-                              selectedGenres: _selectedGenres,
-                            ),
+                  ? Center(
+                      child: Text(
+                        'Error: $_error',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    )
+                  : isSearchActive
+                  ? SearchResultList(results: _searchResults)
+                  : InitialSearchFilters(
+                      onStatusSelected: _onStatusSelected,
+                      onGenreSelected: _onGenreSelected,
+                      selectedStatus: _selectedStatus,
+                      selectedGenres: _selectedGenres,
+                    ),
             ),
           ],
         ),
@@ -201,8 +205,8 @@ class _SearchPageState extends State<SearchPage> {
 }
 
 class SearchResultList extends StatelessWidget {
-  final List<MangaSummary> results;
   const SearchResultList({super.key, required this.results});
+  final List<MangaSummary> results;
 
   @override
   Widget build(BuildContext context) {
@@ -221,21 +225,27 @@ class SearchResultList extends StatelessWidget {
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
               child: Image.network(
-                manga.imageUrl, 
-                width: 50, 
-                height: 70, 
+                manga.imageUrl,
+                width: 50,
+                height: 70,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     width: 50,
                     height: 70,
                     color: Colors.grey.shade800,
-                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
                   );
                 },
               ),
             ),
-            title: Text(manga.title, style: const TextStyle(color: Colors.white)),
+            title: Text(
+              manga.title,
+              style: const TextStyle(color: Colors.white),
+            ),
             onTap: () {
               Navigator.push(
                 context,
@@ -252,11 +262,6 @@ class SearchResultList extends StatelessWidget {
 }
 
 class InitialSearchFilters extends StatelessWidget {
-  final Function(String) onStatusSelected;
-  final Function(String) onGenreSelected;
-  final String? selectedStatus;
-  final List<String> selectedGenres;
-
   const InitialSearchFilters({
     super.key,
     required this.onStatusSelected,
@@ -264,6 +269,10 @@ class InitialSearchFilters extends StatelessWidget {
     this.selectedStatus,
     required this.selectedGenres,
   });
+  final Function(String) onStatusSelected;
+  final Function(String) onGenreSelected;
+  final String? selectedStatus;
+  final List<String> selectedGenres;
 
   @override
   Widget build(BuildContext context) {
@@ -271,18 +280,23 @@ class InitialSearchFilters extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          const SearchSectionHeader(title: 'Quick filters'),
+          const SectionHeader(title: 'Quick filters'),
           const SizedBox(height: 8),
-          const Text('Status', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const Text(
+            'Status',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           StatusFilterChips(
             selectedStatus: selectedStatus,
             onSelected: onStatusSelected,
           ),
           const SizedBox(height: 16),
-
-          SearchSectionHeader(title: 'Genres', actionText: 'see all', onActionPressed: () {}),
+          SectionHeader(
+            title: 'Genres',
+            actionText: 'see all',
+            onActionPressed: () {},
+          ),
           GenreFilterChips(
             selectedGenres: selectedGenres,
             onSelected: onGenreSelected,
@@ -293,29 +307,50 @@ class InitialSearchFilters extends StatelessWidget {
   }
 }
 
-
-class SearchSectionHeader extends StatelessWidget {
+class SectionHeader extends StatelessWidget {
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.actionText,
+    this.onActionPressed,
+  });
   final String title;
   final String? actionText;
   final VoidCallback? onActionPressed;
-  const SearchSectionHeader({super.key, required this.title, this.actionText, this.onActionPressed});
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         if (actionText != null)
-          TextButton(onPressed: onActionPressed, child: Text(actionText!, style: TextStyle(color: Colors.grey.shade400))),
+          TextButton(
+            onPressed: onActionPressed,
+            child: Text(
+              actionText!,
+              style: TextStyle(color: Colors.grey.shade400),
+            ),
+          ),
       ],
     );
   }
 }
 
 class StatusFilterChips extends StatelessWidget {
+  const StatusFilterChips({
+    super.key,
+    this.selectedStatus,
+    required this.onSelected,
+  });
   final String? selectedStatus;
   final Function(String) onSelected;
-  const StatusFilterChips({super.key, this.selectedStatus, required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -348,17 +383,25 @@ class StatusFilterChips extends StatelessWidget {
 }
 
 class GenreFilterChips extends StatelessWidget {
+  const GenreFilterChips({
+    super.key,
+    required this.selectedGenres,
+    required this.onSelected,
+  });
   final List<String> selectedGenres;
   final Function(String) onSelected;
-  const GenreFilterChips({super.key, required this.selectedGenres, required this.onSelected});
 
   @override
   Widget build(BuildContext context) {
     final genres = {
-      'Sci-Fi': '💖', 'Horror': '👻', 'Sport': '⚽',
-      'Romance': '❤️', 'Comedy': '😂', 'Adventure': '🚀',
+      'Sci-Fi': '💖',
+      'Horror': '👻',
+      'Sport': '⚽',
+      'Romance': '❤️',
+      'Comedy': '😂',
+      'Adventure': '🚀',
     };
-    
+
     return Wrap(
       spacing: 8.0,
       runSpacing: 8.0,

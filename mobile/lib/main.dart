@@ -14,11 +14,28 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "MyManga",
+      title: 'MangaBal',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.grey.shade900,
+        platform: TargetPlatform.android,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
-      home: Home(),
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: const ScrollBehavior().copyWith(
+            physics: const BouncingScrollPhysics(),
+            overscroll: false,
+          ),
+          child: child!,
+        );
+      },
+      home: const Home(),
     );
   }
 }
