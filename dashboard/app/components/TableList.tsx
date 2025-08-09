@@ -1,6 +1,7 @@
 import React from "react";
+import { mangaData } from "../interface/IManga";
 
-function TableList() {
+function TableList({ mangaData }: mangaData) {
   return (
     <div className="flex flex-col">
       <div className="-m-1.5 overflow-x-auto">
@@ -36,25 +37,27 @@ function TableList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                    Umamusume Derby Party
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                    19 Augustus 2024
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                    Comedy, Sport, Slice of life
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-blue-500 hover:text-blue-800 focus:outline-hidden focus:text-blue-800 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      Ongoing
-                    </button>
-                  </td>
-                </tr>
+                {mangaData.map((value, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                      {value.title}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                      {value.released}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                      {value.genres?.join(", ")}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-blue-500 hover:text-blue-800 focus:outline-hidden focus:text-blue-800 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {value.status}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

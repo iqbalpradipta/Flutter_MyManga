@@ -9,30 +9,37 @@ import 'package:manga_bal/src/detail.dart';
 import 'package:manga_bal/src/model/manga_detail.dart';
 
 
+Map<String, dynamic> _buildQueryParameters(
+  String query,
+  String? status,
+  List<String> genres,
+) {
+  final queryParameters = {'limit': '50'};
+  if (query.isNotEmpty) {
+    queryParameters['q'] = query;
+  }
+  if (status != null) {
+    queryParameters['status'] = status;
+  }
+  if (genres.isNotEmpty) {
+    queryParameters['genre'] = genres.join(',');
+  }
+  return queryParameters;
+}
+
 Future<List<MangaSummary>> searchManga({
-  String query = '',
+  required String query,
   String? status,
   List<String> genres = const [],
 }) async {
-  final Map<String, dynamic> queryParams = {'limit': '50'}; 
-  if (query.isNotEmpty) {
-    queryParams['q'] = query;
-  }
-  if (status != null) {
-    queryParams['status'] = status;
-  }
-  if (genres.isNotEmpty) {
-    queryParams['genre'] = genres.join(',');
-  }
-
+  final queryParameters = _buildQueryParameters(query, status, genres);
   final uri = Uri.parse('https://flutter-my-manga.vercel.app/api/v1/comic')
-      .replace(queryParameters: queryParams);
+      .replace(queryParameters: queryParameters);
 
   final response = await http.get(uri);
   if (response.statusCode == 200) {
-    final decodedResponse = jsonDecode(response.body);
-    final List<dynamic> data = decodedResponse['data'];
-    return data.map((json) => MangaSummary.fromJson(json)).toList();
+    final jsonData = jsonDecode(response.body);
+    return jsonData.map((json) => MangaSummary.fromJson(json)).toList();
   } else {
     throw Exception('Gagal melakukan pencarian manga');
   }
@@ -77,7 +84,6 @@ class _SearchPageState extends State<SearchPage> {
 
       setState(() {
         _isSearching = true;
-        _error = null;
       });
 
       try {
@@ -88,17 +94,14 @@ class _SearchPageState extends State<SearchPage> {
         );
         setState(() {
           _searchResults = results;
+          _isSearching = false;
+          _error = null;
         });
       } catch (e) {
         setState(() {
           _error = e.toString();
+          _isSearching = false;
         });
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isSearching = false;
-          });
-        }
       }
     });
   }
@@ -268,7 +271,8 @@ class InitialSearchFilters extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Quick filters'),
+
+          const SearchSectionHeader(title: 'Quick filters'),
           const SizedBox(height: 8),
           const Text('Status', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -277,7 +281,8 @@ class InitialSearchFilters extends StatelessWidget {
             onSelected: onStatusSelected,
           ),
           const SizedBox(height: 16),
-          SectionHeader(title: 'Genres', actionText: 'see all', onActionPressed: () {}),
+
+          SearchSectionHeader(title: 'Genres', actionText: 'see all', onActionPressed: () {}),
           GenreFilterChips(
             selectedGenres: selectedGenres,
             onSelected: onGenreSelected,
@@ -288,11 +293,12 @@ class InitialSearchFilters extends StatelessWidget {
   }
 }
 
-class SectionHeader extends StatelessWidget {
+
+class SearchSectionHeader extends StatelessWidget {
   final String title;
   final String? actionText;
   final VoidCallback? onActionPressed;
-  const SectionHeader({super.key, required this.title, this.actionText, this.onActionPressed});
+  const SearchSectionHeader({super.key, required this.title, this.actionText, this.onActionPressed});
   @override
   Widget build(BuildContext context) {
     return Row(
